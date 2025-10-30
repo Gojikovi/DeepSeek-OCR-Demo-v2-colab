@@ -21,11 +21,11 @@ model = AutoModel.from_pretrained(MODEL_NAME, _attn_implementation='flash_attent
 model = model.eval().cuda()
 
 MODEL_CONFIGS = {
-    "⚡ Gundam": {"base_size": 1024, "image_size": 640, "crop_mode": True},
-    "🚀 Tiny": {"base_size": 512, "image_size": 512, "crop_mode": False},
-    "📄 Small": {"base_size": 640, "image_size": 640, "crop_mode": False},
-    "📊 Base": {"base_size": 1024, "image_size": 1024, "crop_mode": False},
-    "🎯 Large": {"base_size": 1280, "image_size": 1280, "crop_mode": False}
+    "Gundam": {"base_size": 1024, "image_size": 640, "crop_mode": True},
+    "Tiny": {"base_size": 512, "image_size": 512, "crop_mode": False},
+    "Small": {"base_size": 640, "image_size": 640, "crop_mode": False},
+    "Base": {"base_size": 1024, "image_size": 1024, "crop_mode": False},
+    "Large": {"base_size": 1280, "image_size": 1280, "crop_mode": False}
 }
 
 TASK_PROMPTS = {
@@ -230,7 +230,7 @@ with gr.Blocks(theme=gr.themes.Soft(), title="DeepSeek-OCR") as demo:
         with gr.Column(scale=1):
             file_in = gr.File(label="Upload Image or PDF", file_types=["image", ".pdf"], type="filepath")
             input_img = gr.Image(label="Input Image", type="pil", height=300)
-            mode = gr.Dropdown(list(MODEL_CONFIGS.keys()), value="⚡ Gundam", label="Mode")
+            mode = gr.Dropdown(list(MODEL_CONFIGS.keys()), value="Gundam", label="Mode")
             task = gr.Dropdown(list(TASK_PROMPTS.keys()), value="📋 Markdown", label="Task")
             prompt = gr.Textbox(label="Prompt", lines=2, visible=False)
             btn = gr.Button("Extract", variant="primary", size="lg")
@@ -250,8 +250,8 @@ with gr.Blocks(theme=gr.themes.Soft(), title="DeepSeek-OCR") as demo:
     
     gr.Examples(
         examples=[
-            ["examples/ocr.jpg", "⚡ Gundam", "📋 Markdown", ""],
-            ["examples/reachy-mini.jpg", "⚡ Gundam", "📍 Locate", "Robot"]
+            ["examples/ocr.jpg", "Gundam", "📋 Markdown", ""],
+            ["examples/reachy-mini.jpg", "Gundam", "📍 Locate", "Robot"]
         ],
         inputs=[input_img, mode, task, prompt],
         cache_examples=False
@@ -269,7 +269,7 @@ with gr.Blocks(theme=gr.themes.Soft(), title="DeepSeek-OCR") as demo:
         ### Tasks
         - **Markdown**: Convert document to structured markdown (grounding ✅)
         - **Free OCR**: Simple text extraction
-        - **Locate**: Find specific text in image (grounding ✅)
+        - **Locate**: Find specific things in image (grounding ✅)
         - **Describe**: General image description
         - **Custom**: Your own prompt (add `<|grounding|>` for boxes)
         """)
