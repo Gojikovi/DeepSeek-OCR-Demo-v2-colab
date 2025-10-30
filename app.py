@@ -46,13 +46,19 @@ def draw_bounding_boxes(image, refs, extract_images=False):
     draw = ImageDraw.Draw(img_draw)
     overlay = Image.new('RGBA', img_draw.size, (0, 0, 0, 0))
     draw2 = ImageDraw.Draw(overlay)
-    font = ImageFont.load_default()
+    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 25)
     crops = []
     
+    color_map = {}
+    np.random.seed(42)
+
     for ref in refs:
         label = ref[1]
+        if label not in color_map:
+            color_map[label] = (np.random.randint(50, 255), np.random.randint(50, 255), np.random.randint(50, 255))
+
+        color = color_map[label]
         coords = eval(ref[2])
-        color = (np.random.randint(50, 255), np.random.randint(50, 255), np.random.randint(50, 255))
         color_a = color + (60,)
         
         for box in coords:
