@@ -46,7 +46,7 @@ def draw_bounding_boxes(image, refs, extract_images=False):
     draw = ImageDraw.Draw(img_draw)
     overlay = Image.new('RGBA', img_draw.size, (0, 0, 0, 0))
     draw2 = ImageDraw.Draw(overlay)
-    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 25)
+    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 30)
     crops = []
     
     color_map = {}
