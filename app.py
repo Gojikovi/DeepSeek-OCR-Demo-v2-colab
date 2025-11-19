@@ -171,36 +171,25 @@ def process_image(image, mode, task, custom_prompt):
     
     return cleaned, markdown, result, img_out, crops
 
-@spaces.GPU(duration=300)
-def process_pdf(path, mode, task, custom_prompt):
+@spaces.GPU(duration=60)
+def process_pdf(path, mode, task, custom_prompt, page_num):
     doc = fitz.open(path)
-    texts, markdowns, raws, all_crops = [], [], [], []
-    
-    for i in range(len(doc)):
-        page = doc.load_page(i)
-        pix = page.get_pixmap(matrix=fitz.Matrix(300/72, 300/72), alpha=False)
-        img = Image.open(BytesIO(pix.tobytes("png")))
-        
-        text, md, raw, _, crops = process_image(img, mode, task, custom_prompt)
-        
-        if text and text != "No text":
-            texts.append(f"### Page {i + 1}\n\n{text}")
-            markdowns.append(f"### Page {i + 1}\n\n{md}")
-            raws.append(f"=== Page {i + 1} ===\n{raw}")
-            all_crops.extend(crops)
-    
+    total_pages = len(doc)
+    if page_num < 1 or page_num > total_pages:
+        doc.close()
+        return f"Invalid page number. PDF has {total_pages} pages.", "", "", None, []
+    page = doc.load_page(page_num - 1)
+    pix = page.get_pixmap(matrix=fitz.Matrix(300/72, 300/72), alpha=False)
+    img = Image.open(BytesIO(pix.tobytes("png")))
     doc.close()
     
-    return ("\n\n---\n\n".join(texts) if texts else "No text in PDF",
-            "\n\n---\n\n".join(markdowns) if markdowns else "No text in PDF",
-            "\n\n".join(raws), None, all_crops)
+    return process_image(img, mode, task, custom_prompt)
 
-def process_file(path, mode, task, custom_prompt):
+def process_file(path, mode, task, custom_prompt, page_num):
     if not path:
         return "Error Upload file", "", "", None, []
-    
     if path.lower().endswith('.pdf'):
-        return process_pdf(path, mode, task, custom_prompt)
+        return process_pdf(path, mode, task, custom_prompt, page_num)
     else:
         return process_image(Image.open(path), mode, task, custom_prompt)
 
@@ -211,12 +200,21 @@ def toggle_prompt(task):
         return gr.update(visible=True, label="Text to Locate", placeholder="Enter text")
     return gr.update(visible=False)
 
-def load_image(file_path):
+def get_pdf_page_count(file_path):
+    if not file_path or not file_path.lower().endswith('.pdf'):
+        return 1
+    doc = fitz.open(file_path)
+    count = len(doc)
+    doc.close()
+    return count
+
+def load_image(file_path, page_num=1):
     if not file_path:
         return None
     if file_path.lower().endswith('.pdf'):
         doc = fitz.open(file_path)
-        page = doc.load_page(0)
+        page_idx = max(0, min(int(page_num) - 1, len(doc) - 1))
+        page = doc.load_page(page_idx)
         pix = page.get_pixmap(matrix=fitz.Matrix(300/72, 300/72), alpha=False)
         img = Image.open(BytesIO(pix.tobytes("png")))
         doc.close()
@@ -224,10 +222,19 @@ def load_image(file_path):
     else:
         return Image.open(file_path)
 
+def update_page_selector(file_path):
+    if not file_path:
+        return gr.update(visible=False)
+    if file_path.lower().endswith('.pdf'):
+        page_count = get_pdf_page_count(file_path)
+        return gr.update(visible=True, maximum=page_count, value=1, minimum=1,
+                        label=f"Select Page (1-{page_count})")
+    return gr.update(visible=False)
+
 with gr.Blocks(theme=gr.themes.Soft(), title="DeepSeek-OCR") as demo:
     gr.Markdown("""
     # 🚀 DeepSeek-OCR Demo
-    **Convert documents to markdown, extract raw text, and locate specific content with bounding boxes. It takes 20~ sec for markdown and 3~ sec for locate task. Check the info at the bottom of the page for more information.**
+    **Convert documents to markdown, extract raw text, and locate specific content with bounding boxes. It takes 20~ sec for markdown and 3~ sec for locate task examples. Check the info at the bottom of the page for more information.**
     
     **Hope this tool was helpful! If so, a quick like ❤️ would mean a lot :)**
     """)
@@ -236,6 +243,7 @@ with gr.Blocks(theme=gr.themes.Soft(), title="DeepSeek-OCR") as demo:
         with gr.Column(scale=1):
             file_in = gr.File(label="Upload Image or PDF", file_types=["image", ".pdf"], type="filepath")
             input_img = gr.Image(label="Input Image", type="pil", height=300)
+            page_selector = gr.Number(label="Select Page", value=1, minimum=1, step=1, visible=False)
             mode = gr.Dropdown(list(MODEL_CONFIGS.keys()), value="Gundam", label="Mode")
             task = gr.Dropdown(list(TASK_PROMPTS.keys()), value="📋 Markdown", label="Task")
             prompt = gr.Textbox(label="Prompt", lines=2, visible=False)
@@ -280,17 +288,19 @@ with gr.Blocks(theme=gr.themes.Soft(), title="DeepSeek-OCR") as demo:
         - **Custom**: Your own prompt (add `<|grounding|>` for boxes)
         """)
     
-    file_in.change(load_image, [file_in], [input_img])
+    file_in.change(load_image, [file_in, page_selector], [input_img])
+    file_in.change(update_page_selector, [file_in], [page_selector])
+    page_selector.change(load_image, [file_in, page_selector], [input_img])
     task.change(toggle_prompt, [task], [prompt])
     
-    def run(image, file_path, mode, task, custom_prompt):
+    def run(image, file_path, mode, task, custom_prompt, page_num):
+        if file_path:
+            return process_file(file_path, mode, task, custom_prompt, int(page_num))
         if image is not None:
             return process_image(image, mode, task, custom_prompt)
-        if file_path:
-            return process_file(file_path, mode, task, custom_prompt)
         return "Error uploading file or image", "", "", None, []
 
-    btn.click(run, [input_img, file_in, mode, task, prompt],
+    btn.click(run, [input_img, file_in, mode, task, prompt, page_selector],
               [text_out, md_out, raw_out, img_out, gallery])
 
 if __name__ == "__main__":
