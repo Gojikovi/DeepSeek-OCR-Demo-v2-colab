@@ -80,7 +80,7 @@ def draw_bounding_boxes(image, refs, extract_images=False):
     img_draw.paste(overlay, (0, 0), overlay)
     return img_draw, crops
 
-def clean_output(text, include_images=False, remove_labels=False):
+def clean_output(text, include_images=False):
     if not text:
         return ""
     pattern = r'(<\|ref\|>(.*?)<\|/ref\|><\|det\|>(.*?)<\|/det\|>)'
@@ -95,10 +95,7 @@ def clean_output(text, include_images=False, remove_labels=False):
             else:
                 text = text.replace(match[0], '', 1)
         else:
-            if remove_labels:
-                text = text.replace(match[0], '', 1)
-            else:
-                text = text.replace(match[0], match[1], 1)
+            text = re.sub(rf'(?m)^[^\n]*{re.escape(match[0])}[^\n]*\n?', '', text)
     
     return text.strip()
 
@@ -156,8 +153,8 @@ def process_image(image, mode, task, custom_prompt):
     if not result:
         return "No text", "", "", None, []
     
-    cleaned = clean_output(result, include_images=False, remove_labels=True)
-    markdown = clean_output(result, include_images=True, remove_labels=True)
+    cleaned = clean_output(result, False)
+    markdown = clean_output(result, True)
     
     img_out = None
     crops = []
