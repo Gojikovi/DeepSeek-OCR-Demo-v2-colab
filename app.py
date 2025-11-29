@@ -197,6 +197,11 @@ def toggle_prompt(task):
         return gr.update(visible=True, label="Text to Locate", placeholder="Enter text")
     return gr.update(visible=False)
 
+def select_boxes(task):
+    if task == "📍 Locate":
+        return gr.update(selected="tab_boxes")
+    return gr.update()
+
 def get_pdf_page_count(file_path):
     if not file_path or not file_path.lower().endswith('.pdf'):
         return 1
@@ -247,16 +252,16 @@ with gr.Blocks(theme=gr.themes.Soft(), title="DeepSeek-OCR") as demo:
             btn = gr.Button("Extract", variant="primary", size="lg")
         
         with gr.Column(scale=2):
-            with gr.Tabs():
-                with gr.Tab("Text"):
+            with gr.Tabs() as tabs:
+                with gr.Tab("Text", id="tab_text"):
                     text_out = gr.Textbox(lines=20, show_copy_button=True, show_label=False)
-                with gr.Tab("Markdown"):
+                with gr.Tab("Markdown Preview", id="tab_markdown"):
                     md_out = gr.Markdown("")
-                with gr.Tab("Boxes"):
+                with gr.Tab("Boxes", id="tab_boxes"):
                     img_out = gr.Image(type="pil", height=500, show_label=False)
-                with gr.Tab("Cropped Images"):
+                with gr.Tab("Cropped Images", id="tab_crops"):
                     gallery = gr.Gallery(show_label=False, columns=3, height=400)
-                with gr.Tab("Raw Text"):
+                with gr.Tab("Raw Text", id="tab_raw"):
                     raw_out = gr.Textbox(lines=20, show_copy_button=True, show_label=False)
     
     gr.Examples(
@@ -289,6 +294,7 @@ with gr.Blocks(theme=gr.themes.Soft(), title="DeepSeek-OCR") as demo:
     file_in.change(update_page_selector, [file_in], [page_selector])
     page_selector.change(load_image, [file_in, page_selector], [input_img])
     task.change(toggle_prompt, [task], [prompt])
+    task.change(select_boxes, [task], [tabs])
     
     def run(image, file_path, mode, task, custom_prompt, page_num):
         if file_path:
@@ -297,8 +303,9 @@ with gr.Blocks(theme=gr.themes.Soft(), title="DeepSeek-OCR") as demo:
             return process_image(image, mode, task, custom_prompt)
         return "Error uploading file or image", "", "", None, []
 
-    btn.click(run, [input_img, file_in, mode, task, prompt, page_selector],
-              [text_out, md_out, raw_out, img_out, gallery])
+    submit_event = btn.click(run, [input_img, file_in, mode, task, prompt, page_selector],
+                             [text_out, md_out, raw_out, img_out, gallery])
+    submit_event.then(select_boxes, [task], [tabs])
 
 if __name__ == "__main__":
     demo.queue(max_size=20).launch()
