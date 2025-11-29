@@ -156,8 +156,8 @@ def process_image(image, mode, task, custom_prompt):
     if not result:
         return "No text", "", "", None, []
     
-    cleaned = clean_output(result, False, False)
-    markdown = clean_output(result, True, True)
+    cleaned = clean_output(result, include_images=False, remove_labels=True)
+    markdown = clean_output(result, include_images=True, remove_labels=True)
     
     img_out = None
     crops = []
@@ -251,15 +251,15 @@ with gr.Blocks(theme=gr.themes.Soft(), title="DeepSeek-OCR") as demo:
         
         with gr.Column(scale=2):
             with gr.Tabs():
-                with gr.Tab("📝 Text"):
+                with gr.Tab("Text"):
                     text_out = gr.Textbox(lines=20, show_copy_button=True, show_label=False)
-                with gr.Tab("🎨 Markdown"):
+                with gr.Tab("Markdown"):
                     md_out = gr.Markdown("")
-                with gr.Tab("🖼️ Boxes"):
+                with gr.Tab("Boxes"):
                     img_out = gr.Image(type="pil", height=500, show_label=False)
-                with gr.Tab("🖼️ Cropped Images"):
+                with gr.Tab("Cropped Images"):
                     gallery = gr.Gallery(show_label=False, columns=3, height=400)
-                with gr.Tab("🔍 Raw"):
+                with gr.Tab("Raw Text"):
                     raw_out = gr.Textbox(lines=20, show_copy_button=True, show_label=False)
     
     gr.Examples(
