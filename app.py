@@ -233,7 +233,7 @@ def update_page_selector(file_path):
                         label=f"Select Page (1-{page_count})")
     return gr.update(visible=False)
 
-with gr.Blocks(theme=gr.themes.Soft(), title="DeepSeek-OCR") as demo:
+with gr.Blocks(title="DeepSeek-OCR") as demo:
     gr.Markdown("""
     # 🚀 DeepSeek-OCR Demo
     **Convert documents to markdown, extract raw text, and locate specific content with bounding boxes. It takes 20~ sec for markdown and 3~ sec for locate task examples. Check the info at the bottom of the page for more information.**
@@ -254,7 +254,7 @@ with gr.Blocks(theme=gr.themes.Soft(), title="DeepSeek-OCR") as demo:
         with gr.Column(scale=2):
             with gr.Tabs() as tabs:
                 with gr.Tab("Text", id="tab_text"):
-                    text_out = gr.Textbox(lines=20, show_copy_button=True, show_label=False)
+                    text_out = gr.Textbox(lines=20, buttons=["copy"], show_label=False)
                 with gr.Tab("Markdown Preview", id="tab_markdown"):
                     md_out = gr.Markdown("")
                 with gr.Tab("Boxes", id="tab_boxes"):
@@ -262,7 +262,7 @@ with gr.Blocks(theme=gr.themes.Soft(), title="DeepSeek-OCR") as demo:
                 with gr.Tab("Cropped Images", id="tab_crops"):
                     gallery = gr.Gallery(show_label=False, columns=3, height=400)
                 with gr.Tab("Raw Text", id="tab_raw"):
-                    raw_out = gr.Textbox(lines=20, show_copy_button=True, show_label=False)
+                    raw_out = gr.Textbox(lines=20, buttons=["copy"], show_label=False)
     
     gr.Examples(
         examples=[
@@ -308,4 +308,4 @@ with gr.Blocks(theme=gr.themes.Soft(), title="DeepSeek-OCR") as demo:
     submit_event.then(select_boxes, [task], [tabs])
 
 if __name__ == "__main__":
-    demo.queue(max_size=20).launch()
+    demo.queue(max_size=20).launch(theme=gr.themes.Soft())
