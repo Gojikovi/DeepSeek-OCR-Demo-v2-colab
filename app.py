@@ -20,19 +20,11 @@ tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, trust_remote_code=True)
 model = AutoModel.from_pretrained(MODEL_NAME, _attn_implementation='flash_attention_2', torch_dtype=torch.bfloat16, trust_remote_code=True, use_safetensors=True)
 model = model.eval().cuda()
 
-MODEL_CONFIGS = {
-    "Default": {"base_size": 1024, "image_size": 768, "crop_mode": True},
-    "Quality": {"base_size": 1280, "image_size": 960, "crop_mode": True},
-    "Fast": {"base_size": 1024, "image_size": 640, "crop_mode": True},
-    "No Crop": {"base_size": 1024, "image_size": 768, "crop_mode": False},
-    "Small": {"base_size": 768, "image_size": 512, "crop_mode": False},
-}
+DEFAULT_CONFIG = {"base_size": 1024, "image_size": 768, "crop_mode": True}
 
 TASK_PROMPTS = {
     "📋 Markdown": {"prompt": "<image>\n<|grounding|>Convert the document to markdown.", "has_grounding": True},
     "📝 Free OCR": {"prompt": "<image>\nFree OCR.", "has_grounding": False},
-    "🖼️ OCR Image": {"prompt": "<image>\n<|grounding|>OCR this image.", "has_grounding": True},
-    "📊 Parse Figure": {"prompt": "<image>\nParse the figure.", "has_grounding": False},
     "📍 Locate": {"prompt": "<image>\nLocate <|ref|>text<|/ref|> in the image.", "has_grounding": True},
     "🔍 Describe": {"prompt": "<image>\nDescribe this image in detail.", "has_grounding": False},
     "✏️ Custom": {"prompt": "", "has_grounding": False}
@@ -114,7 +106,7 @@ def embed_images(markdown, crops):
     return markdown
 
 @spaces.GPU(duration=90)
-def process_image(image, mode, task, custom_prompt):
+def process_image(image, task, custom_prompt):
     if image is None:
         return "Error: Upload an image", "", "", None, []
     if task in ["✏️ Custom", "📍 Locate"] and not custom_prompt.strip():
@@ -124,7 +116,7 @@ def process_image(image, mode, task, custom_prompt):
         image = image.convert('RGB')
     image = ImageOps.exif_transpose(image)
     
-    config = MODEL_CONFIGS[mode]
+    config = DEFAULT_CONFIG
     
     if task == "✏️ Custom":
         prompt = f"<image>\n{custom_prompt.strip()}"
@@ -181,7 +173,7 @@ def process_image(image, mode, task, custom_prompt):
     return cleaned, markdown, result, img_out, crops
 
 @spaces.GPU(duration=90)
-def process_pdf(path, mode, task, custom_prompt, page_num):
+def process_pdf(path, task, custom_prompt, page_num):
     doc = fitz.open(path)
     total_pages = len(doc)
     if page_num < 1 or page_num > total_pages:
@@ -192,15 +184,15 @@ def process_pdf(path, mode, task, custom_prompt, page_num):
     img = Image.open(BytesIO(pix.tobytes("png")))
     doc.close()
     
-    return process_image(img, mode, task, custom_prompt)
+    return process_image(img, task, custom_prompt)
 
-def process_file(path, mode, task, custom_prompt, page_num):
+def process_file(path, task, custom_prompt, page_num):
     if not path:
         return "Error: Upload a file", "", "", None, []
     if path.lower().endswith('.pdf'):
-        return process_pdf(path, mode, task, custom_prompt, page_num)
+        return process_pdf(path, task, custom_prompt, page_num)
     else:
-        return process_image(Image.open(path), mode, task, custom_prompt)
+        return process_image(Image.open(path), task, custom_prompt)
 
 def toggle_prompt(task):
     if task == "✏️ Custom":
@@ -249,7 +241,6 @@ with gr.Blocks(title="DeepSeek-OCR-2") as demo:
     gr.Markdown("""
     # 🚀 DeepSeek-OCR-2 Demo
     **Convert documents to markdown, extract text, parse figures, and locate specific content with bounding boxes.** 
-
     **It's powered by DeepEncoder v2. It achieves 91.09% on OmniDocBench (+3.73% over v1).** 
     
     **Hope this tool was helpful! If so, a quick like ❤️ would mean a lot :)**
@@ -260,7 +251,6 @@ with gr.Blocks(title="DeepSeek-OCR-2") as demo:
             file_in = gr.File(label="Upload Image or PDF", file_types=["image", ".pdf"], type="filepath")
             input_img = gr.Image(label="Input Image", type="pil", height=300)
             page_selector = gr.Number(label="Select Page", value=1, minimum=1, step=1, visible=False)
-            mode = gr.Dropdown(list(MODEL_CONFIGS.keys()), value="Default", label="Mode")
             task = gr.Dropdown(list(TASK_PROMPTS.keys()), value="📋 Markdown", label="Task")
             prompt = gr.Textbox(label="Prompt", lines=2, visible=False)
             btn = gr.Button("Extract", variant="primary", size="lg")
@@ -280,27 +270,18 @@ with gr.Blocks(title="DeepSeek-OCR-2") as demo:
     
     gr.Examples(
         examples=[
-            ["examples/ocr.jpg", "Default", "📋 Markdown", ""],
-            ["examples/reachy-mini.jpg", "Default", "📍 Locate", "Robot"]
+            ["examples/ocr.jpg", "📋 Markdown", ""],
+            ["examples/reachy-mini.jpg", "📍 Locate", "Robot"]
         ],
-        inputs=[input_img, mode, task, prompt],
+        inputs=[input_img, task, prompt],
         cache_examples=False
     )
     
     with gr.Accordion("ℹ️ Info", open=False):
         gr.Markdown("""
-        ### Modes
-        - **Default**: 1024 base + 768 tiles with cropping - Recommended for most use cases
-        - **Quality**: 1280 base + 960 tiles with cropping - Higher quality, slower
-        - **Fast**: 1024 base + 640 tiles with cropping - Faster processing
-        - **No Crop**: 1024 base + 768 tiles without cropping - Single image processing
-        - **Small**: 768 base + 512 tiles without cropping - Fastest, lower quality
-        
         ### Tasks
         - **Markdown**: Convert document to structured markdown with layout detection (grounding ✅)
         - **Free OCR**: Simple text extraction without layout
-        - **OCR Image**: OCR for general images with grounding (grounding ✅)
-        - **Parse Figure**: Parse figures and charts in documents
         - **Locate**: Find and highlight specific text/elements in image (grounding ✅)
         - **Describe**: General image description
         - **Custom**: Your own prompt (add `<|grounding|>` for bounding boxes)
@@ -318,14 +299,14 @@ with gr.Blocks(title="DeepSeek-OCR-2") as demo:
     task.change(toggle_prompt, [task], [prompt])
     task.change(select_boxes, [task], [tabs])
     
-    def run(image, file_path, mode, task, custom_prompt, page_num):
+    def run(image, file_path, task, custom_prompt, page_num):
         if file_path:
-            return process_file(file_path, mode, task, custom_prompt, int(page_num))
+            return process_file(file_path, task, custom_prompt, int(page_num))
         if image is not None:
-            return process_image(image, mode, task, custom_prompt)
+            return process_image(image, task, custom_prompt)
         return "Error: Upload a file or image", "", "", None, []
 
-    submit_event = btn.click(run, [input_img, file_in, mode, task, prompt, page_selector],
+    submit_event = btn.click(run, [input_img, file_in, task, prompt, page_selector],
                              [text_out, md_out, raw_out, img_out, gallery])
     submit_event.then(select_boxes, [task], [tabs])
 
