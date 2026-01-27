@@ -146,7 +146,9 @@ def process_image(image, task, custom_prompt):
         save_results=False
     )
     
-    result = sys.stdout.getvalue().strip()
+    debug_filters = ['PATCHES', '====', 'BASE:', 'directly resize', 'NO PATCHES', 'torch.Size', '%|']
+    result = '\n'.join([l for l in sys.stdout.getvalue().split('\n') 
+                        if l.strip() and not any(s in l for s in debug_filters)]).strip()
     sys.stdout = stdout
     
     os.unlink(tmp.name)
