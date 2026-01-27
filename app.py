@@ -48,7 +48,7 @@ def draw_bounding_boxes(image, refs, extract_images=False):
     draw = ImageDraw.Draw(img_draw)
     overlay = Image.new('RGBA', img_draw.size, (0, 0, 0, 0))
     draw2 = ImageDraw.Draw(overlay)
-    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 30)
+    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 15)
     crops = []
     
     color_map = {}
@@ -248,7 +248,9 @@ def update_page_selector(file_path):
 with gr.Blocks(title="DeepSeek-OCR-2") as demo:
     gr.Markdown("""
     # 🚀 DeepSeek-OCR-2 Demo
-    **Convert documents to markdown, extract text, parse figures, and locate specific content with bounding boxes.** 
+    **Convert documents to markdown, extract text, parse figures, and locate specific content with bounding boxes.**
+    
+    Powered by **DeepEncoder V2** - a novel LLM-style vision encoder that dynamically reorders visual tokens based on semantic understanding, mimicking human reading patterns instead of rigid left-to-right scanning. Achieves **91.09%** on OmniDocBench (+3.73% over v1).
     
     **If this tool was helpful, please consider giving it a like ❤️!**
     """)
