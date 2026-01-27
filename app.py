@@ -252,7 +252,7 @@ with gr.Blocks(title="DeepSeek-OCR-2") as demo:
 
     **It's powered by DeepEncoder v2. It achieves 91.09% on OmniDocBench (+3.73% over v1).** 
     
-    **If this tool was helpful, please consider giving it a like ❤️!**
+    **Hope this tool was helpful! If so, a quick like ❤️ would mean a lot :)**
     """)
     
     with gr.Row():
@@ -305,14 +305,11 @@ with gr.Blocks(title="DeepSeek-OCR-2") as demo:
         - **Describe**: General image description
         - **Custom**: Your own prompt (add `<|grounding|>` for bounding boxes)
         
-        ### Prompts 
-        - Document: <image>\\n<|grounding|>Convert the document to markdown.
-        - Free OCR: <image>\\nFree OCR.
-        - Other Image: <image>\\n<|grounding|>OCR this image.
-        - Parse Figure: <image>\\nParse the figure.
-        - Describe: <image>\\nDescribe this image in detail.
-        - Locate: <image>\\nLocate <|ref|>text<|/ref|> in the image.
-        ```
+        ### Special Tokens
+        - `<image>` - Placeholder where visual tokens (256-1120 size) are inserted
+        - `<|grounding|>` - Enables layout detection with bounding boxes
+        - `<|ref|>text<|/ref|>` - Reference text to locate in the image
+    
         """)
     
     file_in.change(load_image, [file_in, page_selector], [input_img])
