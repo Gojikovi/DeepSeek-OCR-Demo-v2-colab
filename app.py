@@ -250,7 +250,7 @@ with gr.Blocks(title="DeepSeek-OCR-2") as demo:
     # 🚀 DeepSeek-OCR-2 Demo
     **Convert documents to markdown, extract text, parse figures, and locate specific content with bounding boxes.**
     
-    Powered by **DeepEncoder V2** - a novel LLM-style vision encoder that dynamically reorders visual tokens based on semantic understanding, mimicking human reading patterns instead of rigid left-to-right scanning. Achieves **91.09%** on OmniDocBench (+3.73% over v1).
+    It is powered by **DeepEncoder v2**. It achieves **91.09%** on OmniDocBench (+3.73% over v1).
     
     **If this tool was helpful, please consider giving it a like ❤️!**
     """)
