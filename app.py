@@ -248,9 +248,9 @@ def update_page_selector(file_path):
 with gr.Blocks(title="DeepSeek-OCR-2") as demo:
     gr.Markdown("""
     # 🚀 DeepSeek-OCR-2 Demo
-    **Convert documents to markdown, extract text, parse figures, and locate specific content with bounding boxes.**
-    
-    It is powered by **DeepEncoder v2**. It achieves **91.09%** on OmniDocBench (+3.73% over v1).
+    **Convert documents to markdown, extract text, parse figures, and locate specific content with bounding boxes.** 
+
+    **It's powered by DeepEncoder v2. It achieves 91.09% on OmniDocBench (+3.73% over v1).** 
     
     **If this tool was helpful, please consider giving it a like ❤️!**
     """)
@@ -305,12 +305,13 @@ with gr.Blocks(title="DeepSeek-OCR-2") as demo:
         - **Describe**: General image description
         - **Custom**: Your own prompt (add `<|grounding|>` for bounding boxes)
         
-        Document: <image>\\n<|grounding|>Convert the document to markdown.
-        Free OCR: <image>\\nFree OCR.
-        Other Image: <image>\\n<|grounding|>OCR this image.
-        Parse Figure: <image>\\nParse the figure.
-        Describe: <image>\\nDescribe this image in detail.
-        Locate: <image>\\nLocate <|ref|>text<|/ref|> in the image.
+        ### Prompts 
+        - Document: <image>\\n<|grounding|>Convert the document to markdown.
+        - Free OCR: <image>\\nFree OCR.
+        - Other Image: <image>\\n<|grounding|>OCR this image.
+        - Parse Figure: <image>\\nParse the figure.
+        - Describe: <image>\\nDescribe this image in detail.
+        - Locate: <image>\\nLocate <|ref|>text<|/ref|> in the image.
         ```
         """)
     
