@@ -241,7 +241,7 @@ with gr.Blocks(title="DeepSeek-OCR-2") as demo:
     gr.Markdown("""
     # 🚀 DeepSeek-OCR-2 Demo
     **Convert documents to markdown, extract text, parse figures, and locate specific content with bounding boxes.** 
-    **It's powered by DeepEncoder v2. It achieves 91.09% on OmniDocBench (+3.73% over v1).** 
+    **Model uses DeepEncoder v2 and achieves 91.09% on OmniDocBench (+3.73% over v1).** 
     
     **Hope this tool was helpful! If so, a quick like ❤️ would mean a lot :)**
     """)
@@ -290,7 +290,7 @@ with gr.Blocks(title="DeepSeek-OCR-2") as demo:
         - **Custom**: Your own prompt
         
         ### Special Tokens
-        - `<image>` - Placeholder where visual tokens (256-1120 size) are inserted
+        - `<image>` - Placeholder where visual tokens are inserted
         - `<|grounding|>` - Enables layout detection with bounding boxes
         - `<|ref|>text<|/ref|>` - Reference text to locate in the image
     
