@@ -321,4 +321,4 @@ with gr.Blocks(title="DeepSeek-OCR-2") as demo:
     submit_event.then(select_boxes, [task], [tabs])
 
 if __name__ == "__main__":
-    demo.queue(max_size=20).launch(theme=gr.themes.Soft())
+    demo.queue(max_size=20).launch(share=True, theme=gr.themes.Soft())
