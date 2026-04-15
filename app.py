@@ -1,7 +1,6 @@
 import gradio as gr
 from transformers import AutoModel, AutoTokenizer
 import torch
-import spaces
 import os
 import sys
 import tempfile
@@ -16,7 +15,7 @@ from io import StringIO, BytesIO
 MODEL_NAME = 'deepseek-ai/DeepSeek-OCR-2'
 
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, trust_remote_code=True)
-model = AutoModel.from_pretrained(MODEL_NAME, _attn_implementation='flash_attention_2', torch_dtype=torch.bfloat16, trust_remote_code=True, use_safetensors=True)
+model = AutoModel.from_pretrained(MODEL_NAME, _attn_implementation='eager', torch_dtype=torch.bfloat16, trust_remote_code=True, use_safetensors=True)
 model = model.eval().cuda()
 
 BASE_SIZE = 1024
@@ -37,7 +36,7 @@ def extract_grounding_references(text):
 
 def draw_bounding_boxes(image, refs, extract_images=False):
     img_w, img_h = image.size
-    img_draw = image.copy()
+    img_draw = image.copy().convert('RGB')
     draw = ImageDraw.Draw(img_draw)
     overlay = Image.new('RGBA', img_draw.size, (0, 0, 0, 0))
     draw2 = ImageDraw.Draw(overlay)
@@ -50,14 +49,21 @@ def draw_bounding_boxes(image, refs, extract_images=False):
     for ref in refs:
         label = ref[1]
         if label not in color_map:
-            color_map[label] = (np.random.randint(50, 255), np.random.randint(50, 255), np.random.randint(50, 255))
+            r = int(np.random.randint(50, 255))
+            g = int(np.random.randint(50, 255))
+            b = int(np.random.randint(50, 255))
+            color_map[label] = (r, g, b)
 
         color = color_map[label]
+        color_a = (color[0], color[1], color[2], 60)
+        
         coords = eval(ref[2])
-        color_a = color + (60,)
         
         for box in coords:
-            x1, y1, x2, y2 = int(box[0]/999*img_w), int(box[1]/999*img_h), int(box[2]/999*img_w), int(box[3]/999*img_h)
+            x1 = int(box[0] / 999 * img_w)
+            y1 = int(box[1] / 999 * img_h)
+            x2 = int(box[2] / 999 * img_w)
+            y2 = int(box[3] / 999 * img_h)
             
             if extract_images and label == 'image':
                 crops.append(image.crop((x1, y1, x2, y2)))
@@ -67,12 +73,15 @@ def draw_bounding_boxes(image, refs, extract_images=False):
             draw2.rectangle([x1, y1, x2, y2], fill=color_a)
             
             text_bbox = draw.textbbox((0, 0), label, font=font)
-            tw, th = text_bbox[2] - text_bbox[0], text_bbox[3] - text_bbox[1]
+            tw = text_bbox[2] - text_bbox[0]
+            th = text_bbox[3] - text_bbox[1]
             ty = max(0, y1 - 20)
             draw.rectangle([x1, ty, x1 + tw + 4, ty + th + 4], fill=color)
             draw.text((x1 + 2, ty + 2), label, font=font, fill=(255, 255, 255))
     
+    img_draw = img_draw.convert('RGBA')
     img_draw.paste(overlay, (0, 0), overlay)
+    img_draw = img_draw.convert('RGB')
     return img_draw, crops
 
 def clean_output(text, include_images=False):
@@ -106,7 +115,6 @@ def embed_images(markdown, crops):
         markdown = markdown.replace(f'**[Figure {i + 1}]**', f'\n\n![Figure {i + 1}](data:image/png;base64,{b64})\n\n', 1)
     return markdown
 
-@spaces.GPU(duration=90)
 def process_image(image, task, custom_prompt):
     if image is None:
         return "Error: Upload an image", "", "", None, []
@@ -172,7 +180,6 @@ def process_image(image, task, custom_prompt):
     
     return cleaned, markdown, result, img_out, crops
 
-@spaces.GPU(duration=90)
 def process_pdf(path, task, custom_prompt, page_num):
     doc = fitz.open(path)
     total_pages = len(doc)
